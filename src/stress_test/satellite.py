@@ -136,4 +136,17 @@ def project_loss_rates(
     pd.Series
         Projected loss rates indexed by quarter.
     """
-    raise NotImplementedError
+    X = scenario_df.loc[:, list(regressor_cols)].copy()
+    if add_constant:
+        X = sm.add_constant(X, has_constant="add")
+    
+    loss_rates = pd.Series(
+        model.predict(X),
+        index=X.index,
+        name="loss_rate"
+    )
+
+    if clip:
+        loss_rates = loss_rates.clip(lower=0.0, upper=1.0)
+
+    return loss_rates

@@ -45,9 +45,17 @@ def test_fit_satellite_model_returns_results():
     assert "const" in results.params.index
 
 
-def test_project_loss_rates_stub_raises():
-    idx = pd.period_range("2025Q1", periods=4, freq=cfg.FREQUENCY)
-    scenario = _dummy_macro(idx)
-    model = object()
-    with pytest.raises(NotImplementedError):
-        project_loss_rates(model, scenario)
+def test_project_loss_rates_returns_series():
+    hist_idx = pd.period_range("2020Q1", periods=8, freq=cfg.FREQUENCY)
+    macro_hist = _dummy_macro(hist_idx)
+    loss = _dummy_loss(hist_idx)
+    
+    X, y = prepare_regression_data(macro_hist, loss)
+    model = fit_satellite_model(X, y)
+    scen_idx = pd.period_range("2025Q1", periods=4, freq=cfg.FREQUENCY)
+    scenario = _dummy_macro(scen_idx)
+    projection = project_loss_rates(model, scenario)
+
+    assert isinstance(projection, pd.Series)
+    assert projection.index.equals(scen_idx)
+    
