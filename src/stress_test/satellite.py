@@ -14,11 +14,11 @@ Core API
 - prepare_regression_data(...): align macro history and loss-rate history into X, y
 - fit_satellite_model(X, y): fit an OLS model (statsmodels)
 - project_loss_rates(model, scenario_df): apply model to scenario macros
+- fit_bucket_models(macro_hist, loss_rates_hist): fit one model per bucket
 """
 
 from __future__ import annotations
-from typing import Iterable, Sequence, Tuple
-import numpy as np
+from typing import Sequence, Tuple
 import pandas as pd
 import statsmodels.api as sm
 
@@ -45,7 +45,7 @@ def prepare_regression_data(
     Parameters
     ----------
     macro_history:
-        Historical macro data indexed by quarter (PeriodIndex) with scenario columns.
+        Historical macro data indexed by quarter (PeriodIndex) with regressor columns.
     loss_rate_history:
         Historical loss-rate series indexed by quarter (PeriodIndex), values in [0, 1].
     regressor_cols:
@@ -62,12 +62,19 @@ def prepare_regression_data(
     y:
         Series of loss rates aligned to X.
     """
-    X = macro_history[list(regressor_cols)]
-    df = X.join(loss_rate_history, how="inner")
+    missing = [c for c in regressor_cols if c not in macro_history.columns]
+    if missing:
+        raise KeyError(f"Missing macro columns: {missing}")
+    if loss_rate_history.name is None:
+        loss_rate_history = loss_rate_history.rename("loss_rate")
+
+    X_raw = macro_history.loc[:, list(regressor_cols)]
+    df = X_raw.join(loss_rate_history, how="inner")
+
     if dropna:
         df = df.dropna()
-    X = df[list(regressor_cols)]
-    y = df[loss_rate_history.name]
+    X = df.loc[:, list(regressor_cols)].copy()
+    y = df[loss_rate_history.name].copy()
 
     if add_constant:
         X = sm.add_constant(X, has_constant="add")
@@ -79,20 +86,7 @@ def fit_satellite_model(
     X: pd.DataFrame,
     y: pd.Series,
 ) -> "sm.regression.linear_model.RegressionResultsWrapper":
-    """Fit an OLS satellite model.
-
-    Parameters
-    ----------
-    X:
-        Regressor matrix, typically output of prepare_regression_data.
-    y:
-        Dependent variable (loss rate).
-
-    Returns
-    -------
-    statsmodels RegressionResultsWrapper
-        Fitted OLS model with coefficients, standard errors, fitted values, etc.
-    """
+    """Fit an OLS satellite model."""
     if not isinstance(X, pd.DataFrame):
         raise TypeError("X must be a pandas DataFrame")
     if not isinstance(y, pd.Series):
@@ -116,26 +110,11 @@ def project_loss_rates(
     add_constant: bool = True,
     clip: bool = True,
 ) -> pd.Series:
-    """Project loss rates for a given scenario.
-
-    Parameters
-    ----------
-    model:
-        A fitted statsmodels OLS model.
-    scenario_df:
-        Scenario macro path indexed by quarter (PeriodIndex).
-    regressor_cols:
-        Macro columns used for prediction (must match those used in fitting).
-    add_constant:
-        If True, add an intercept column when preparing prediction matrix.
-    clip:
-        If True, clip projected loss rates into [0, 1].
-
-    Returns
-    -------
-    pd.Series
-        Projected loss rates indexed by quarter.
-    """
+    """Project loss rates for a given scenario."""
+    missing = [c for c in regressor_cols if c not in scenario_df.columns]
+    if missing:
+        raise KeyError(f"Missing scenario macro columns: {missing}")
+    
     X = scenario_df.loc[:, list(regressor_cols)].copy()
     if add_constant:
         X = sm.add_constant(X, has_constant="add")
@@ -150,3 +129,33 @@ def project_loss_rates(
         loss_rates = loss_rates.clip(lower=0.0, upper=1.0)
 
     return loss_rates
+
+
+def fit_bucket_models(
+        macro_hist: pd.DataFrame,
+        loss_rates_hist: pd.DataFrame,
+        buckets: Sequence[str] | None = None,
+        regressor_cols: Sequence[str] = DEFAULT_REGRESSORS,
+        *,
+        add_constant: bool = True,
+        dropna: bool = True
+) -> dict[str, "sm.regression.linear_model.RegressionResultsWrapper"]:
+    """Fit one satellite (loss-rate) model per bucket."""
+
+    if buckets is None:
+        buckets = list(loss_rates_hist.columns)
+    models: dict[str, "sm.regression.linear_model.RegressionResultsWrapper"] = {}
+
+    for bucket in buckets:
+        if bucket not in loss_rates_hist.columns:
+            raise KeyError(f"Bucket '{bucket}' not found in loss_rates_hist columns")
+        X, y = prepare_regression_data(
+            macro_history=macro_hist,
+            loss_rate_history=loss_rates_hist[bucket],
+            regressor_cols=regressor_cols,
+            add_constant=add_constant,
+            dropna=dropna
+        )
+        models[bucket] = fit_satellite_model(X, y)
+    return models
+

@@ -5,6 +5,7 @@ from stress_test.satellite import (
     prepare_regression_data,
     fit_satellite_model,
     project_loss_rates,
+    fit_bucket_models
 )
 
 def _dummy_macro(index):
@@ -58,4 +59,28 @@ def test_project_loss_rates_returns_series():
 
     assert isinstance(projection, pd.Series)
     assert projection.index.equals(scen_idx)
-    
+
+def test_fit_bucket_models_returns_models_for_all_buckets():
+    hist_idx = pd.period_range("2010Q1", periods=20, freq=cfg.FREQUENCY)
+    macro_hist = _dummy_macro(hist_idx)
+
+    # loss-rate history w/ one column per bucket
+    # values are constant - checks orchestration and return types
+    loss_hist = pd.DataFrame(
+        index=hist_idx,
+        data={
+            cfg.MORTGAGES_OO: 0.01,
+            cfg.CONSUMER_UNSECURED: 0.02,
+            cfg.SME_LOANS: 0.015,
+            cfg.LARGE_CORP_LOANS: 0.005
+        }
+    )
+
+    models = fit_bucket_models(macro_hist, loss_hist)
+    # ensure keys match bucket columns
+    assert set(models.keys()) == set(loss_hist.columns)
+
+    # ensure each value is a fitted statsmodels results object
+    for _, res in models.items():
+        assert hasattr(res, "params")
+        assert "const" in res.params.index
