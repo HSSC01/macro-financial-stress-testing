@@ -1,5 +1,4 @@
 import pandas as pd
-import pytest
 import stress_test.config as cfg
 from stress_test.satellite import (
     prepare_regression_data,
