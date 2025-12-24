@@ -156,3 +156,19 @@ for bank in BANK_NAMES:
     ):
         if not (0.0 <= v <= 1.0):
             raise ValueError(f"{name} for {bank} must be in [0,1], got {v}")
+
+
+# Scenario variables
+GDP_GROWTH = "gdp_growth"
+UNEMPLOYMENT_RATE = "unemployment_rate"
+HOUSE_PRICE_GROWTH = "house_price_growth"
+POLICY_RATE = "policy_rate"
+GILT_10Y = "gilt_10y"
+
+REQUIRED_SCENARIO_COLUMNS = {
+    GDP_GROWTH,
+    UNEMPLOYMENT_RATE,
+    HOUSE_PRICE_GROWTH,
+    POLICY_RATE,
+    GILT_10Y,
+}

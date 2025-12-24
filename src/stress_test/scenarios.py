@@ -8,23 +8,24 @@
 
 import pandas as pd
 import numpy as np
+import stress_test.config as cfg
 
 def quarter_index(start: str, horizon_q: int) -> pd.PeriodIndex:
     """Create a PeriodIndex of quarters starting at `start` for `horizon_q` quarters."""
-    start_period = pd.Period(start, freq="Q")
-    return pd.period_range(start=start_period, periods=horizon_q, freq="Q")
-    
+    start_period = pd.Period(start, freq=cfg.FREQUENCY)
+    return pd.period_range(start=start_period, periods=horizon_q, freq=cfg.FREQUENCY)
+
 
 def make_baseline(start: str = "2025Q4", horizon_q: int = 12) -> pd.DataFrame:
     index = quarter_index(start, horizon_q)
     df = pd.DataFrame(
         index=index,
         data={
-            "gdp_growth": 0.004,
-            "unemployment_rate": 0.045,
-            "house_price_growth": 0.003,
-            "policy_rate": 0.035,
-            "gilt_10y": 0.040
+            cfg.GDP_GROWTH: 0.004,
+            cfg.UNEMPLOYMENT_RATE: 0.045,
+            cfg.HOUSE_PRICE_GROWTH: 0.003,
+            cfg.POLICY_RATE: 0.035,
+            cfg.GILT_10Y: 0.040
         }
     )
     validate_scenario(df)
@@ -51,11 +52,11 @@ def make_adverse(baseline_df: pd.DataFrame, severity: float=1.0, persistence: fl
         raise ValueError("baseline_df must be a non-empty DataFrame.")
     horizon_q = len(baseline_df.index)
     impact = {
-        "gdp_growth": -0.020 * severity,
-        "unemployment_rate": 0.010 * severity,
-        "house_price_growth": -0.030 * severity,
-        "policy_rate": -0.005 * severity,
-        "gilt_10y": -0.003 * severity
+        cfg.GDP_GROWTH: -0.020 * severity,
+        cfg.UNEMPLOYMENT_RATE: 0.010 * severity,
+        cfg.HOUSE_PRICE_GROWTH: -0.030 * severity,
+        cfg.POLICY_RATE: -0.005 * severity,
+        cfg.GILT_10Y: -0.003 * severity
     }
     adverse = baseline_df.copy()
     for col, s0 in impact.items():
@@ -65,7 +66,7 @@ def make_adverse(baseline_df: pd.DataFrame, severity: float=1.0, persistence: fl
         adverse[col] = adverse[col].to_numpy(dtype=float) + shock_path
 
     # Safety
-    adverse["unemployment_rate"] = adverse["unemployment_rate"].clip(lower=0.0)
+    adverse[cfg.UNEMPLOYMENT_RATE] = adverse[cfg.UNEMPLOYMENT_RATE].clip(lower=0.0)
     validate_scenario(adverse)
     return adverse
 
@@ -73,21 +74,14 @@ def make_adverse(baseline_df: pd.DataFrame, severity: float=1.0, persistence: fl
 def validate_scenario(df: pd.DataFrame) -> None:
     if df is None or df.empty:
         raise ValueError("Scenario DataFrame must be non-empty.")
-    required_columns = {
-        "gdp_growth",
-        "unemployment_rate",
-        "house_price_growth",
-        "policy_rate",
-        "gilt_10y"
-    }
-    missing = required_columns - set(df.columns)
+    missing = cfg.REQUIRED_SCENARIO_COLUMNS - set(df.columns)
     if missing:
         raise ValueError(f"Missing required columns: {missing}")
     if not isinstance(df.index, pd.PeriodIndex):
         raise ValueError("DataFrame index must be a pandas PeriodIndex.")
 
     freqstr = getattr(df.index, "freqstr", None)
-    if not freqstr or not freqstr.startswith("Q"):
-        raise ValueError("DataFrame index must have quarterly frequency (freqstr starting with 'Q').")
+    if not freqstr or not freqstr.startswith(cfg.FREQUENCY):
+        raise ValueError(f"DataFrame index must have quarterly frequency (freqstr starting with '{cfg.FREQUENCY}').")
     if df.isnull().any().any():
         raise ValueError("DataFrame contains null values.")

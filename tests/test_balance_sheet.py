@@ -1,4 +1,3 @@
-import pytest
 from stress_test.balance_sheet import make_stylised_banks
 from stress_test import config as cfg
 
