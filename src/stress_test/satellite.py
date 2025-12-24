@@ -93,7 +93,19 @@ def fit_satellite_model(
     statsmodels RegressionResultsWrapper
         Fitted OLS model with coefficients, standard errors, fitted values, etc.
     """
-    raise NotImplementedError
+    if not isinstance(X, pd.DataFrame):
+        raise TypeError("X must be a pandas DataFrame")
+    if not isinstance(y, pd.Series):
+        raise TypeError("y must be a pandas Series")
+    
+    X_aligned, y_aligned = X.align(y, join="inner", axis=0)
+
+    if X_aligned.empty or y_aligned.empty:
+        raise ValueError("X and y have no overlapping index after alignment")
+
+    model = sm.OLS(y_aligned.astype(float), X_aligned.astype(float))
+    results = model.fit()
+    return results
 
 
 def project_loss_rates(

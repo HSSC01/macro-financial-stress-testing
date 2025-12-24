@@ -34,12 +34,16 @@ def test_prepare_regression_data_returns_aligned_X_y():
     assert cfg.HOUSE_PRICE_GROWTH in X.columns
     
 
-def test_fit_satellite_model_stub_raises():
+def test_fit_satellite_model_returns_results():
     idx = pd.period_range("2010Q1", periods=8, freq=cfg.FREQUENCY)
-    X = _dummy_macro(idx)
-    y = _dummy_loss(idx)
-    with pytest.raises(NotImplementedError):
-        fit_satellite_model(X, y)
+    macro = _dummy_macro(idx)
+    loss = _dummy_loss(idx)
+    X, y = prepare_regression_data(macro, loss)
+    results = fit_satellite_model(X, y)
+
+    assert hasattr(results, "params")
+    assert "const" in results.params.index
+
 
 def test_project_loss_rates_stub_raises():
     idx = pd.period_range("2025Q1", periods=4, freq=cfg.FREQUENCY)
