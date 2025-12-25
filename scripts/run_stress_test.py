@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import Iterable
 import pandas as pd
 from stress_test.balance_sheet import Bank, make_stylised_banks
+import stress_test.engine as eng
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 OUTPUT_TABLES_DIR = REPO_ROOT / "outputs" / "tables"
@@ -109,7 +110,7 @@ def write_starting_positions_csv(banks: list[Bank]) -> Path:
     return out_path
 
 def parse_args() -> argparse.Namespace:
-    p = argparse.ArgumentParser(description="Run bank starting-position summary.")
+    p = argparse.ArgumentParser(description="Run bank starting-position summary and (optionally) the full stress test.")
     p.add_argument(
         "--bank",
         type=str,
@@ -121,12 +122,24 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Write outputs/tables/bank_starting_positions.csv"
     )
+    p.add_argument(
+        "--run-stress",
+        action="store_true",
+        help="Run the full stress test (fit satellite models, project scenarios, compute trough/shortfall)."
+    )
+    p.add_argument(
+        "--write-results-csv",
+        action="store_true",
+        help="Write outputs/tables/trough_summary.csv (requires --run-stress)."
+    )
     return p.parse_args()
 
 def main() -> None:
+    # Instantiate banks
     args = parse_args()
     banks = make_stylised_banks()
     banks = select_banks(banks, args.bank)
+    
     for i, bank in enumerate(banks):
         if i:
             print("\n" + "=" * 80 + "\n")
@@ -134,6 +147,31 @@ def main() -> None:
     if args.write_csv:
         out_path = write_starting_positions_csv(banks)
         print(f"\nWrote: {out_path}")
+    
+    if args.run_stress:
+        # Fit satelite models (synthetic history)
+        models = eng.fit_models_from_synthetic_history()
+
+        # Build scenarios (12 quarters)
+        projected_loss_rates = eng.build_projected_loss_rates(models=models, horizon_q=12)
+
+        # Run stress test engine
+        system_results = eng.run_system(banks=banks, projected_loss_rates=projected_loss_rates)
+
+        # Summarise troughs / shortfall
+        summary = eng.compute_trough_summary(system_results, banks=banks)
+        print(summary)
+
+        if args.write_results_csv:
+            OUTPUT_TABLES_DIR.mkdir(parents=True, exist_ok=True)
+            out_path = OUTPUT_TABLES_DIR / "trough_summary.csv"
+            summary.to_csv(out_path, index=False)
+            print(f"\nWrote: {out_path}")
+    else:
+        if args.write_results_csv:
+            raise SystemExit("--write-results-csv requires --run-stress")
+
+
 
 if __name__ == "__main__":
     main()
