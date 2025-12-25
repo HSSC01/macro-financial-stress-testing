@@ -86,9 +86,64 @@ def build_projected_loss_rates(models: dict, horizon_q: int = 12, severity: floa
         "adverse": project_loss_rates_all_buckets(models, adverse)
     }
 
-if __name__ == "__main__":
-    models = fit_models_from_synthetic_history(periods=80, seed=184)
-    projected = build_projected_loss_rates(models, horizon_q=12, severity=1.0)
-    banks = bs.make_stylised_banks()
-    results = run_system(banks, projected)
-    print(results.head())
+def compute_trough_summary(results: pd.DataFrame, banks: list[bs.Bank], *, hurdle: float = 0.07) -> pd.DataFrame:
+    """Compute trough CET1 ratio and capital shortfall to a hurdle.
+    Parameters
+    ----------
+    results:
+        Output of `run_system(...)` with columns: scenario, bank, quarter, total_losses_t, cet1, cet1_ratio.
+    banks:
+        List of Bank objects used in the run (provides starting CET1 and RWA).
+    hurdle:
+        CET1 ratio hurdle (e.g., 0.07 for 7%).
+        
+    Returns
+    -------
+    pd.DataFrame
+        One row per (scenario, bank) with:
+        - start_cet1_ratio
+        - trough_quarter
+        - trough_cet1
+        - trough_cet1_ratio
+        - breach
+        - shortfall_gbp
+    """
+    required = {"scenario", "bank", "quarter", "total_losses_t", "cet1", "cet1_ratio"}
+    missing = required.difference(results.columns)
+    if missing:
+        raise KeyError(f"Results missing columns: {missing}")
+    
+    bank_map: dict[str, bs.Bank] = {b.name: b for b in banks}
+
+    # Locate trough row per (scenario, bank)
+    tmp = results.copy()
+    tmp["cet1_ratio"] = pd.to_numeric(tmp["cet1_ratio"], errors="coerce")
+    idx = tmp.groupby(["scenario", "bank"])["cet1_ratio"].idxmin()
+    trough_rows = tmp.loc[idx].reset_index(drop=True)
+
+    out_rows: list[dict] = []
+    for _, r in trough_rows.iterrows():
+        bank_name = r["bank"]
+        if bank_name not in bank_map:
+            raise KeyError(f"Bank '{bank_name}' not found in banks list")
+        bank = bank_map[bank_name]
+        start_ratio = bank.cet1 / bank.total_rwa
+        trough_cet1 = float(r["cet1"])
+        trough_ratio = float(r["cet1_ratio"])
+        rwa = float(bank.total_rwa)
+
+        shortfall = max(0.0, hurdle * rwa - trough_cet1)
+        out_rows.append({
+            "scenario": r["scenario"],
+            "bank": bank_name,
+            "start_cet1_ratio": start_ratio,
+            "trough_quarter": r["quarter"],
+            "trough_cet1": trough_cet1,
+            "trough_cet1_ratio": trough_ratio,
+            "breach": trough_ratio < hurdle,
+            "shortfall_gbp": shortfall
+        })
+    return pd.DataFrame(out_rows)
+
+
+    
