@@ -1,4 +1,4 @@
-scenario,bank,quarter,bucket,loss_rate,losses_t
+scenario,bank,quarter,bucket,loss_rate,losses_bn
 baseline,HSBC,2025Q4,mortgages_oo,0.011577073987776168,1.8523318380441869
 baseline,HSBC,2025Q4,consumer_unsecured,0.02009911135477003,2.4118933625724033
 baseline,HSBC,2025Q4,sme_loans,0.014943984944001624,2.988796988800325

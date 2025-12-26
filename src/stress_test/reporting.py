@@ -8,6 +8,7 @@
 
 from __future__ import annotations
 from pathlib import Path
+from matplotlib import pyplot as plt
 import pandas as pd
 from stress_test.balance_sheet import Bank
 
@@ -70,6 +71,66 @@ def write_losses_by_bucket_csv(losses_by_bucket: pd.DataFrame, out_dir: Path) ->
     out_path = out_dir / "losses_by_bucket.csv"
     losses_by_bucket.to_csv(out_path, index=False)
     return out_path
+
+def plot_cet1_ratio_paths(cet1_ratio_paths: pd.DataFrame, out_dir: Path) -> Path:
+    """Plot CET1 Ratio Paths"""
+    out_dir.mkdir(parents=True, exist_ok=True)
+    out_path = out_dir / "cet1_ratio_paths.png"
+    df = cet1_ratio_paths.copy()
+    required_cols = {"scenario", "bank", "quarter", "cet1_ratio"}
+    missing = required_cols - set(df.columns)
+    if missing:
+        raise ValueError(f"cet1_ratio_paths missing required columns: {missing}")
+    df = df[["scenario", "bank", "quarter", "cet1_ratio"]].copy()
+    df = df.sort_values(["bank", "scenario", "quarter"])
+    colour_cycle = plt.rcParams["axes.prop_cycle"].by_key().get("color", [])
+    banks = list(pd.unique(df["bank"]))
+    bank_colour = {
+        b: colour_cycle[i % len(colour_cycle)] if colour_cycle else None
+        for i, b in enumerate(banks)
+    }
+    scenario_linestyle = {
+        "baseline": "-",
+        "adverse": "--"
+    }
+    fig, ax = plt.subplots()
+    scenarios = list(pd.unique(df["scenario"]))
+    for bank in banks:
+        for scenario in scenarios:
+            sub = df[(df["bank"] == bank) & (df["scenario"] == scenario)]
+            if sub.empty:
+                continue
+            s_key = str(scenario).lower()
+            ax.plot(
+                sub["quarter"],
+                sub["cet1_ratio"],
+                label=f"{bank} ({scenario})",
+                linestyle=scenario_linestyle.get(s_key, "-"),
+                color=bank_colour.get(bank, None),
+            )
+
+    ax.set_title("CET1 ratio paths")
+    ax.set_ylabel("CET1 ratio")
+    ax.tick_params(axis="x", rotation=45)
+    ax.legend(loc="best", fontsize="small")
+
+    fig.tight_layout()
+    fig.savefig(out_path, dpi=150)
+    plt.close(fig)
+    return out_path
+    
+def plot_results_figures(
+        *,
+        cet1_ratio_paths: pd.DataFrame | None,
+        out_dir: Path,
+        plot_figures: bool
+) -> list[Path]:
+    plotted: list[Path] = []
+    if plot_figures:
+        if cet1_ratio_paths is None:
+            raise ValueError("cet1_ratio_paths are required when plot_figures=True")
+        plotted.append(plot_cet1_ratio_paths(cet1_ratio_paths, out_dir))
+    return plotted
 
 def write_results_tables(
     *,

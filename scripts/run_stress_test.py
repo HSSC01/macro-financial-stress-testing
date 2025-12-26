@@ -35,7 +35,7 @@ from stress_test.balance_sheet import Bank, make_stylised_banks
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 OUTPUT_TABLES_DIR = REPO_ROOT / "outputs" / "tables"
-
+OUTPUT_FIGURES_DIR = REPO_ROOT / "outputs" / "figures"
 
 
 # Formatting
@@ -159,9 +159,14 @@ def parse_args() -> argparse.Namespace:
     p.add_argument(
         "--write-results-csv",
         action="store_true",
-        help="Write outputs/tables/system_results.csv and outputs/tables/trough_summary.csv (requires --run-stress).",
+        help="Write results to outputs/tables/[table].csv (requires --run-stress).",
     )
 
+    p.add_argument(
+        "--plot-figures",
+        action="store_true",
+        help="Save figures to outputs/figures/[figure].png (requires --run-stress)."
+    )
     return p.parse_args()
 
 
@@ -225,6 +230,15 @@ def main() -> None:
             )
             for p in paths:
                 print(f"Wrote: {p}")
+            
+            if args.plot_figures:
+                paths = rpt.plot_results_figures(
+                    cet1_ratio_paths=cet1_ratio_paths,
+                    out_dir=OUTPUT_FIGURES_DIR,
+                    plot_figures=True
+                )
+                for p in paths:
+                    print(f"Saved: {p}.png")
 
     else:
         if args.write_results_csv:
