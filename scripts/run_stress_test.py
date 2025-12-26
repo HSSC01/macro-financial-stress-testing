@@ -197,6 +197,15 @@ def main() -> None:
         # Compute trough/shortfall
         trough_summary = eng.compute_trough_summary(system_results, banks=banks)
 
+        # CET1 ratio paths
+        cet1_ratio_paths = system_results.drop(columns=["total_losses_t"])
+
+        # Loss paths (total)
+        loss_paths = system_results.drop(columns=["cet1_ratio", "cet1"])
+
+        # Losses by bucket
+        losses_by_bucket = eng.compute_losses_by_bucket(banks=banks, projected_loss_rates=projected_loss_rates)
+
         if args.print_system_results:
             print(system_results)
 
@@ -208,8 +217,10 @@ def main() -> None:
                 banks=banks,
                 system_results=system_results,
                 trough_summary=trough_summary,
+                cet1_ratio_paths=cet1_ratio_paths,
+                loss_paths=loss_paths,
+                losses_by_bucket=losses_by_bucket,
                 out_dir=OUTPUT_TABLES_DIR,
-                write_starting=False,
                 write_results=True,
             )
             for p in paths:

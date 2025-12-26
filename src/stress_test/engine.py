@@ -26,6 +26,22 @@ def compute_credit_losses(ead_by_bucket: pd.Series, loss_rates: pd.DataFrame) ->
     losses_df["total_losses_t"] = losses_df.sum(axis=1)
     return losses_df
 
+def compute_losses_by_bucket(banks: list[bs.Bank], projected_loss_rates: dict[str, pd.DataFrame]) -> pd.DataFrame:
+        rows: list[pd.DataFrame] = []
+        for bank in banks:
+            ead_by_bucket = bank_ead_series(bank)
+
+            for scenario, lr_df in projected_loss_rates.items():
+                losses_df = compute_credit_losses(ead_by_bucket, lr_df)
+                bucket_losses = losses_df.drop(columns=["total_losses_t"], errors="ignore")
+
+                out = (pd.concat([lr_df.stack(), bucket_losses.stack()], axis=1).reset_index())
+                out.columns = ["quarter", "bucket", "loss_rate", "losses_bn"]
+                out.insert(0, "bank", bank.name)
+                out.insert(0, "scenario", scenario)
+                rows.append(out)
+        
+        return pd.concat(rows, ignore_index=True)
 
 # Capital Dynamics
 

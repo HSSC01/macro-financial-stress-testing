@@ -7,11 +7,8 @@
 """
 
 from __future__ import annotations
-
 from pathlib import Path
-
 import pandas as pd
-
 from stress_test.balance_sheet import Bank
 
 
@@ -53,14 +50,36 @@ def write_trough_summary_csv(trough_summary: pd.DataFrame, out_dir: Path) -> Pat
     trough_summary.to_csv(out_path, index=False)
     return out_path
 
+def write_cet1_ratio_paths_csv(cet1_ratio_paths: pd.DataFrame, out_dir: Path) -> Path:
+    """Write CET1 Ratio Paths"""
+    out_dir.mkdir(parents=True, exist_ok=True)
+    out_path = out_dir / "cet1_ratio_paths.csv"
+    cet1_ratio_paths.to_csv(out_path, index=False)
+    return out_path
+
+def write_loss_paths_csv(loss_paths: pd.DataFrame, out_dir: Path) -> Path:
+    """Write loss paths"""
+    out_dir.mkdir(parents=True, exist_ok=True)
+    out_path = out_dir / "loss_paths.csv"
+    loss_paths.to_csv(out_path, index=False)
+    return out_path
+
+def write_losses_by_bucket_csv(losses_by_bucket: pd.DataFrame, out_dir: Path) -> Path:
+    """Write losses by bucket"""
+    out_dir.mkdir(parents=True, exist_ok=True)
+    out_path = out_dir / "losses_by_bucket.csv"
+    losses_by_bucket.to_csv(out_path, index=False)
+    return out_path
 
 def write_results_tables(
     *,
     banks: list[Bank],
     system_results: pd.DataFrame | None,
     trough_summary: pd.DataFrame | None,
+    cet1_ratio_paths: pd.DataFrame | None,
+    loss_paths: pd.DataFrame | None,
+    losses_by_bucket: pd.DataFrame | None,
     out_dir: Path,
-    write_starting: bool,
     write_results: bool,
 ) -> list[Path]:
     """Convenience wrapper to write the standard table pack.
@@ -75,8 +94,6 @@ def write_results_tables(
         Output of engine.compute_trough_summary(...). Required if write_results=True.
     out_dir:
         Directory to write CSVs into.
-    write_starting:
-        Whether to write bank_starting_positions.csv
     write_results:
         Whether to write system_results.csv and trough_summary.csv
 
@@ -88,13 +105,14 @@ def write_results_tables(
 
     written: list[Path] = []
 
-    if write_starting:
-        written.append(write_starting_positions_csv(banks, out_dir))
-
     if write_results:
-        if system_results is None or trough_summary is None:
-            raise ValueError("system_results and trough_summary are required when write_results=True")
+        if system_results is None or trough_summary is None or cet1_ratio_paths is None or loss_paths is None or losses_by_bucket is None:
+            raise ValueError("system_results, trough_summary, cet1_ratio_paths and loss_paths are required when write_results=True")
         written.append(write_system_results_csv(system_results, out_dir))
         written.append(write_trough_summary_csv(trough_summary, out_dir))
+        written.append(write_cet1_ratio_paths_csv(cet1_ratio_paths, out_dir))
+        written.append(write_loss_paths_csv(loss_paths, out_dir))
+        written.append(write_losses_by_bucket_csv(losses_by_bucket, out_dir))
 
     return written
+
