@@ -72,6 +72,7 @@ def write_losses_by_bucket_csv(losses_by_bucket: pd.DataFrame, out_dir: Path) ->
     losses_by_bucket.to_csv(out_path, index=False)
     return out_path
 
+# Capital resilience over time
 def plot_cet1_ratio_paths(cet1_ratio_paths: pd.DataFrame, out_dir: Path) -> Path:
     """Plot CET1 Ratio Paths"""
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -111,8 +112,8 @@ def plot_cet1_ratio_paths(cet1_ratio_paths: pd.DataFrame, out_dir: Path) -> Path
                 linewidth=1
             )
     plt.axhline(y=hurdle, color='black', alpha=0.5, linestyle='-', label='CET1 hurdle (7%)')
-    ax.set_title("CET1 ratio paths")
-    ax.set_ylabel("CET1 ratio (%)")
+    ax.set_title("Projected CET1 ratios over time (baseline and adverse scenarios)")
+    ax.set_ylabel("%")
     ax.tick_params(axis="x", rotation=45)
     ax.legend(loc="best", fontsize="small")
 
@@ -121,6 +122,7 @@ def plot_cet1_ratio_paths(cet1_ratio_paths: pd.DataFrame, out_dir: Path) -> Path
     plt.close(fig)
     return out_path
 
+# Severity and persistence of credit stress
 def plot_total_losses_paths(loss_paths: pd.DataFrame, out_dir: Path) -> Path:
     """Plot total losses path"""
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -159,8 +161,8 @@ def plot_total_losses_paths(loss_paths: pd.DataFrame, out_dir: Path) -> Path:
                 linewidth=1
             )
 
-    ax.set_title("Total Losses paths")
-    ax.set_ylabel("Total Losses (£bn)")
+    ax.set_title("Projected total credit losses over time")
+    ax.set_ylabel("£ bn")
     ax.tick_params(axis="x", rotation=45)
     ax.legend(loc="best", fontsize="small")
 
@@ -169,6 +171,7 @@ def plot_total_losses_paths(loss_paths: pd.DataFrame, out_dir: Path) -> Path:
     plt.close(fig)
     return out_path
 
+# Which banks breach and by how much (ratios)
 def plot_trough_cet1_ratio_adverse(trough_summary: pd.DataFrame, out_dir: Path) -> Path:
     """Plot trough CET1 ratio vs hurdle (adverse)"""
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -184,8 +187,8 @@ def plot_trough_cet1_ratio_adverse(trough_summary: pd.DataFrame, out_dir: Path) 
     df = df[["bank_trough_quarter", "trough_cet1_ratio (%)"]]
     fig, ax = plt.subplots()
     ax.bar(df["bank_trough_quarter"], df["trough_cet1_ratio (%)"])
-    ax.set_title("Trough CET1 ratio (adverse scenario)")
-    ax.set_ylabel("CET1 ratio (%)")
+    ax.set_title("Worst-case CET1 ratio by bank (adverse scenario)")
+    ax.set_ylabel("%")
     plt.axhline(y=hurdle, color='black', linestyle='--', label='CET1 hurdle (7%)')
     ax.tick_params(axis="x", rotation=15)
     ax.legend(loc="best", fontsize="small")
@@ -195,7 +198,29 @@ def plot_trough_cet1_ratio_adverse(trough_summary: pd.DataFrame, out_dir: Path) 
     plt.close(fig)
     return out_path
 
+# Capital required at the trough
+def plot_trough_shortfall_adverse(trough_summary: pd.DataFrame, out_dir: Path) -> Path:
+    """Plot trough shortfall (adverse)"""
+    out_dir.mkdir(parents=True, exist_ok=True)
+    out_path = out_dir / "trough_shortfall_adverse.png"
+    df = trough_summary.copy()
+    df = df[df["scenario"]=="adverse"]
+    required_cols = {"bank", "trough_quarter", "shortfall_gbp"}
+    missing = required_cols - set(df.columns)
+    if missing:
+        raise ValueError(f"trough_summary missing required columns: {missing}")
+    df["bank_trough_quarter"] = df["bank"].astype(str) + " (" + df["trough_quarter"].astype(str) + ")"
+    df = df[["bank_trough_quarter", "shortfall_gbp"]]
+    fig, ax = plt.subplots()
+    ax.bar(df["bank_trough_quarter"], df["shortfall_gbp"])
+    ax.set_title("Worst-case shortfall by bank (adverse scenario)")
+    ax.set_ylabel("£ bn")
+    ax.tick_params(axis="x", rotation=15)
 
+    fig.tight_layout()
+    fig.savefig(out_path, dpi=150)
+    plt.close(fig)
+    return out_path
 
 
 def plot_results_figures(
@@ -213,6 +238,7 @@ def plot_results_figures(
         plotted.append(plot_cet1_ratio_paths(cet1_ratio_paths, out_dir))
         plotted.append(plot_total_losses_paths(loss_paths, out_dir))
         plotted.append(plot_trough_cet1_ratio_adverse(trough_summary, out_dir))
+        plotted.append(plot_trough_shortfall_adverse(trough_summary, out_dir))
     return plotted
 
 def write_results_tables(

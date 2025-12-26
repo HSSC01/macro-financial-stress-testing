@@ -213,9 +213,8 @@ def main() -> None:
 
         if args.print_system_results:
             print(system_results)
-
-        print("\nTrough / shortfall summary:\n")
-        print(trough_summary)
+            print("\nTrough / shortfall summary:\n")
+            print(trough_summary)
 
         if args.write_results_csv:
             paths = rpt.write_results_tables(
@@ -231,16 +230,16 @@ def main() -> None:
             for p in paths:
                 print(f"Wrote: {p}")
             
-            if args.plot_figures:
-                paths = rpt.plot_results_figures(
-                    cet1_ratio_paths=cet1_ratio_paths,
-                    loss_paths=loss_paths,
-                    trough_summary=trough_summary,
-                    out_dir=OUTPUT_FIGURES_DIR,
-                    plot_figures=True
-                )
-                for p in paths:
-                    print(f"Saved: {p}.png")
+        if args.plot_figures:
+            paths = rpt.plot_results_figures(
+                cet1_ratio_paths=cet1_ratio_paths,
+                loss_paths=loss_paths,
+                trough_summary=trough_summary,
+                out_dir=OUTPUT_FIGURES_DIR,
+                plot_figures=True
+            )
+            for p in paths:
+                print(f"Saved: {p}")
 
     else:
         if args.write_results_csv:
