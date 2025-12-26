@@ -206,7 +206,7 @@ def main() -> None:
         cet1_ratio_paths = system_results.drop(columns=["total_losses_t"])
 
         # Loss paths (total)
-        loss_paths = system_results.drop(columns=["cet1_ratio", "cet1"])
+        loss_paths = system_results.drop(columns=["cet1_ratio (%)", "cet1"])
 
         # Losses by bucket
         losses_by_bucket = eng.compute_losses_by_bucket(banks=banks, projected_loss_rates=projected_loss_rates)
@@ -234,6 +234,8 @@ def main() -> None:
             if args.plot_figures:
                 paths = rpt.plot_results_figures(
                     cet1_ratio_paths=cet1_ratio_paths,
+                    loss_paths=loss_paths,
+                    trough_summary=trough_summary,
                     out_dir=OUTPUT_FIGURES_DIR,
                     plot_figures=True
                 )

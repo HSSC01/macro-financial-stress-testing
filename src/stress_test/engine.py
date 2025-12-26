@@ -52,7 +52,7 @@ def simulate_cet1_path(cet1_0: float, total_losses: pd.Series) -> pd.Series:
 def compute_cet1_ratio(cet1_path: pd.Series, rwa: float) -> pd.Series:
     if rwa <= 0:
         raise ValueError("RWA must be positive")
-    return pd.Series(cet1_path / rwa, index=cet1_path.index, name="cet1_ratio")
+    return pd.Series(cet1_path / rwa * 100, index=cet1_path.index, name="cet1_ratio")
 
 # Bank-level orchestration
 
@@ -68,7 +68,7 @@ def run_bank(bank: bs.Bank, loss_rates: pd.DataFrame) -> pd.DataFrame:
     cet1_ratio = compute_cet1_ratio(cet1_path, bank.total_rwa)
     out = losses.copy()
     out["cet1"] = cet1_path
-    out["cet1_ratio"] = cet1_ratio
+    out["cet1_ratio (%)"] = cet1_ratio
     return out
 
 def run_system(banks: list[bs.Bank], projected_loss_rates: dict[str, pd.DataFrame]) -> pd.DataFrame:
@@ -83,7 +83,7 @@ def run_system(banks: list[bs.Bank], projected_loss_rates: dict[str, pd.DataFram
                 "quarter": bank_out.index.astype(str),
                 "total_losses_t": bank_out["total_losses_t"],
                 "cet1": bank_out["cet1"],
-                "cet1_ratio": bank_out["cet1_ratio"]
+                "cet1_ratio (%)": bank_out["cet1_ratio (%)"]
             })
             rows.append(tidy)
     return pd.concat(rows, ignore_index=True)
@@ -124,7 +124,7 @@ def compute_trough_summary(results: pd.DataFrame, banks: list[bs.Bank], *, hurdl
         - breach
         - shortfall_gbp
     """
-    required = {"scenario", "bank", "quarter", "total_losses_t", "cet1", "cet1_ratio"}
+    required = {"scenario", "bank", "quarter", "total_losses_t", "cet1", "cet1_ratio (%)"}
     missing = required.difference(results.columns)
     if missing:
         raise KeyError(f"Results missing columns: {missing}")
@@ -133,8 +133,8 @@ def compute_trough_summary(results: pd.DataFrame, banks: list[bs.Bank], *, hurdl
 
     # Locate trough row per (scenario, bank)
     tmp = results.copy()
-    tmp["cet1_ratio"] = pd.to_numeric(tmp["cet1_ratio"], errors="coerce")
-    idx = tmp.groupby(["scenario", "bank"])["cet1_ratio"].idxmin()
+    tmp["cet1_ratio (%)"] = pd.to_numeric(tmp["cet1_ratio (%)"], errors="coerce")
+    idx = tmp.groupby(["scenario", "bank"])["cet1_ratio (%)"].idxmin()
     trough_rows = tmp.loc[idx].reset_index(drop=True)
 
     out_rows: list[dict] = []
@@ -143,20 +143,20 @@ def compute_trough_summary(results: pd.DataFrame, banks: list[bs.Bank], *, hurdl
         if bank_name not in bank_map:
             raise KeyError(f"Bank '{bank_name}' not found in banks list")
         bank = bank_map[bank_name]
-        start_ratio = bank.cet1 / bank.total_rwa
+        start_ratio = bank.cet1 / bank.total_rwa * 100
         trough_cet1 = float(r["cet1"])
-        trough_ratio = float(r["cet1_ratio"])
+        trough_ratio = float(r["cet1_ratio (%)"])
         rwa = float(bank.total_rwa)
 
         shortfall = max(0.0, hurdle * rwa - trough_cet1)
         out_rows.append({
             "scenario": r["scenario"],
             "bank": bank_name,
-            "start_cet1_ratio": start_ratio,
+            "start_cet1_ratio (%)": start_ratio,
             "trough_quarter": r["quarter"],
             "trough_cet1": trough_cet1,
-            "trough_cet1_ratio": trough_ratio,
-            "breach": trough_ratio < hurdle,
+            "trough_cet1_ratio (%)": trough_ratio,
+            "breach (hurdle = 7%)": trough_ratio < hurdle,
             "shortfall_gbp": shortfall
         })
     return pd.DataFrame(out_rows)

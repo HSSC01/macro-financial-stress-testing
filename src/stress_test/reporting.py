@@ -76,12 +76,13 @@ def plot_cet1_ratio_paths(cet1_ratio_paths: pd.DataFrame, out_dir: Path) -> Path
     """Plot CET1 Ratio Paths"""
     out_dir.mkdir(parents=True, exist_ok=True)
     out_path = out_dir / "cet1_ratio_paths.png"
+    hurdle = 7
     df = cet1_ratio_paths.copy()
-    required_cols = {"scenario", "bank", "quarter", "cet1_ratio"}
+    required_cols = {"scenario", "bank", "quarter", "cet1_ratio (%)"}
     missing = required_cols - set(df.columns)
     if missing:
         raise ValueError(f"cet1_ratio_paths missing required columns: {missing}")
-    df = df[["scenario", "bank", "quarter", "cet1_ratio"]].copy()
+    df = df[["scenario", "bank", "quarter", "cet1_ratio (%)"]].copy()
     df = df.sort_values(["bank", "scenario", "quarter"])
     colour_cycle = plt.rcParams["axes.prop_cycle"].by_key().get("color", [])
     banks = list(pd.unique(df["bank"]))
@@ -103,14 +104,15 @@ def plot_cet1_ratio_paths(cet1_ratio_paths: pd.DataFrame, out_dir: Path) -> Path
             s_key = str(scenario).lower()
             ax.plot(
                 sub["quarter"],
-                sub["cet1_ratio"],
+                sub["cet1_ratio (%)"],
                 label=f"{bank} ({scenario})",
                 linestyle=scenario_linestyle.get(s_key, "-"),
                 color=bank_colour.get(bank, None),
+                linewidth=1
             )
-
+    plt.axhline(y=hurdle, color='black', alpha=0.5, linestyle='-', label='CET1 hurdle (7%)')
     ax.set_title("CET1 ratio paths")
-    ax.set_ylabel("CET1 ratio")
+    ax.set_ylabel("CET1 ratio (%)")
     ax.tick_params(axis="x", rotation=45)
     ax.legend(loc="best", fontsize="small")
 
@@ -118,18 +120,99 @@ def plot_cet1_ratio_paths(cet1_ratio_paths: pd.DataFrame, out_dir: Path) -> Path
     fig.savefig(out_path, dpi=150)
     plt.close(fig)
     return out_path
-    
+
+def plot_total_losses_paths(loss_paths: pd.DataFrame, out_dir: Path) -> Path:
+    """Plot total losses path"""
+    out_dir.mkdir(parents=True, exist_ok=True)
+    out_path = out_dir / "total_losses_paths.png"
+    df = loss_paths.copy()
+    required_cols = {"scenario", "bank", "quarter", "total_losses_t"}
+    missing = required_cols - set(df.columns)
+    if missing:
+        raise ValueError(f"loss_paths missing required columns: {missing}")
+    df = df[["scenario", "bank", "quarter", "total_losses_t"]].copy()
+    df = df.sort_values(["bank", "scenario", "quarter"])
+    colour_cycle = plt.rcParams["axes.prop_cycle"].by_key().get("color", [])
+    banks = list(pd.unique(df["bank"]))
+    bank_colour = {
+        b: colour_cycle[i % len(colour_cycle)] if colour_cycle else None
+        for i, b in enumerate(banks)
+    }
+    scenario_linestyle = {
+        "baseline": "-",
+        "adverse": "--"
+    }
+    fig, ax = plt.subplots()
+    scenarios = list(pd.unique(df["scenario"]))
+    for bank in banks:
+        for scenario in scenarios:
+            sub = df[(df["bank"] == bank) & (df["scenario"] == scenario)]
+            if sub.empty:
+                continue
+            s_key = str(scenario).lower()
+            ax.plot(
+                sub["quarter"],
+                sub["total_losses_t"],
+                label=f"{bank} ({scenario})",
+                linestyle=scenario_linestyle.get(s_key, "-"),
+                color=bank_colour.get(bank, None),
+                linewidth=1
+            )
+
+    ax.set_title("Total Losses paths")
+    ax.set_ylabel("Total Losses (£bn)")
+    ax.tick_params(axis="x", rotation=45)
+    ax.legend(loc="best", fontsize="small")
+
+    fig.tight_layout()
+    fig.savefig(out_path, dpi=150)
+    plt.close(fig)
+    return out_path
+
+def plot_trough_cet1_ratio_adverse(trough_summary: pd.DataFrame, out_dir: Path) -> Path:
+    """Plot trough CET1 ratio vs hurdle (adverse)"""
+    out_dir.mkdir(parents=True, exist_ok=True)
+    out_path = out_dir / "trough_cet1_ratio_adverse.png"
+    hurdle = 7
+    df = trough_summary.copy()
+    df = df[df["scenario"]=="adverse"]
+    required_cols = {"bank", "trough_quarter", "trough_cet1_ratio (%)"}
+    missing = required_cols - set(df.columns)
+    if missing:
+        raise ValueError(f"trough_summary missing required columns: {missing}")
+    df["bank_trough_quarter"] = df["bank"].astype(str) + " (" + df["trough_quarter"].astype(str) + ")"
+    df = df[["bank_trough_quarter", "trough_cet1_ratio (%)"]]
+    fig, ax = plt.subplots()
+    ax.bar(df["bank_trough_quarter"], df["trough_cet1_ratio (%)"])
+    ax.set_title("Trough CET1 ratio (adverse scenario)")
+    ax.set_ylabel("CET1 ratio (%)")
+    plt.axhline(y=hurdle, color='black', linestyle='--', label='CET1 hurdle (7%)')
+    ax.tick_params(axis="x", rotation=15)
+    ax.legend(loc="best", fontsize="small")
+
+    fig.tight_layout()
+    fig.savefig(out_path, dpi=150)
+    plt.close(fig)
+    return out_path
+
+
+
+
 def plot_results_figures(
         *,
         cet1_ratio_paths: pd.DataFrame | None,
+        loss_paths: pd.DataFrame | None,
+        trough_summary: pd.DataFrame | None,
         out_dir: Path,
         plot_figures: bool
 ) -> list[Path]:
     plotted: list[Path] = []
     if plot_figures:
-        if cet1_ratio_paths is None:
-            raise ValueError("cet1_ratio_paths are required when plot_figures=True")
+        if cet1_ratio_paths is None or loss_paths is None or trough_summary is None:
+            raise ValueError("cet1_ratio_paths, loss_paths and trough_summary are required when plot_figures=True")
         plotted.append(plot_cet1_ratio_paths(cet1_ratio_paths, out_dir))
+        plotted.append(plot_total_losses_paths(loss_paths, out_dir))
+        plotted.append(plot_trough_cet1_ratio_adverse(trough_summary, out_dir))
     return plotted
 
 def write_results_tables(
