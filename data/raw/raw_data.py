@@ -12,7 +12,7 @@ def load_raw_macro_data() -> dict[str, pd.DataFrame]:
     # GDP Growth & Unemployment Rate
     url = "https://www.ons.gov.uk/generator"
     uri = {
-        "gdp_growth_df": "/economy/grossdomesticproductgdp/timeseries/abmi/ukea",
+        "gdp_growth_df": "/economy/grossdomesticproductgdp/timeseries/ihyq/ukea",
         "unemployment_rate_df": "/employmentandlabourmarket/peoplenotinwork/unemployment/timeseries/mgsx/lms"
     }
     for k, u in uri.items():
