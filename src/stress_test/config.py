@@ -159,11 +159,11 @@ for bank in BANK_NAMES:
 
 
 # Scenario variables
-GDP_GROWTH = "gdp_growth"
-UNEMPLOYMENT_RATE = "unemployment_rate"
-HOUSE_PRICE_GROWTH = "house_price_growth"
-POLICY_RATE = "policy_rate"
-GILT_10Y = "gilt_10y"
+GDP_GROWTH = "gdp_growth_qoq (decimal)"
+UNEMPLOYMENT_RATE = "unemployment_rate (decimal)"
+HOUSE_PRICE_GROWTH = "house_price_growth_qoq (decimal)"
+POLICY_RATE = "policy_rate (decimal)"
+GILT_10Y = "gilt_10y_yield (decimal)"
 
 REQUIRED_SCENARIO_COLUMNS = {
     GDP_GROWTH,

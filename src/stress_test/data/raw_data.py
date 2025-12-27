@@ -4,7 +4,10 @@ from bs4 import BeautifulSoup
 from urllib.parse import urljoin
 from io import BytesIO
 from io import StringIO
+from pathlib import Path
 
+output_dir = Path("data/raw")
+output_dir.mkdir(parents=True, exist_ok=True)
 
 def load_raw_macro_data() -> dict[str, pd.DataFrame]:
     raw_data: dict[str, pd.DataFrame] = {}
@@ -78,4 +81,8 @@ def load_raw_macro_data() -> dict[str, pd.DataFrame]:
     # GILT 10Y
     raw_data["gilt_10y_df"] = download_boe_iadb(["IUMAMNZC"], "01/Jan/1990", "now")
 
+    for name, df in raw_data.items():
+        df.to_csv(output_dir / f"{name}.csv", index=False)
+
     return raw_data
+

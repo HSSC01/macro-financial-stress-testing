@@ -9,25 +9,23 @@
 import pandas as pd
 import numpy as np
 import stress_test.config as cfg
+import stress_test.data.data as data
 
 def quarter_index(start: str, horizon_q: int) -> pd.PeriodIndex:
     """Create a PeriodIndex of quarters starting at `start` for `horizon_q` quarters."""
     start_period = pd.Period(start, freq=cfg.FREQUENCY)
     return pd.period_range(start=start_period, periods=horizon_q, freq=cfg.FREQUENCY)
 
-
-def make_baseline(start: str = "2025Q4", horizon_q: int = 12) -> pd.DataFrame:
+def make_baseline(macro_hist: pd.DataFrame | None = None, horizon_q: int = 12) -> pd.DataFrame:
+    if macro_hist is None:
+        macro_hist = data.macro_hist()
+    start = macro_hist["quarter"].iloc[-1] + 1
     index = quarter_index(start, horizon_q)
-    df = pd.DataFrame(
-        index=index,
-        data={
-            cfg.GDP_GROWTH: 0.004,
-            cfg.UNEMPLOYMENT_RATE: 0.045,
-            cfg.HOUSE_PRICE_GROWTH: 0.003,
-            cfg.POLICY_RATE: 0.035,
-            cfg.GILT_10Y: 0.040
-        }
-    )
+    last_row = macro_hist.iloc[-1].to_frame().T
+    df = pd.concat([last_row] * horizon_q, ignore_index=True)
+    df.index = index
+    df = df.drop(columns="quarter")
+
     validate_scenario(df)
     return df
 
@@ -85,3 +83,6 @@ def validate_scenario(df: pd.DataFrame) -> None:
         raise ValueError(f"DataFrame index must have quarterly frequency (freqstr starting with '{cfg.FREQUENCY}').")
     if df.isnull().any().any():
         raise ValueError("DataFrame contains null values.")
+
+if __name__ == "__main__":
+    print(make_baseline())
