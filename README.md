@@ -73,6 +73,13 @@ Results are reported at the **bank level**, but portfolio segmentation determine
 
 Balance sheets are segmented into stylised portfolio buckets (e.g. mortgages, SMEs, corporates) with heterogeneous sensitivities to macroeconomic conditions. While results are reported at the bank level, this segmentation governs how macroeconomic shocks transmit into credit losses and underpins cross-bank differences in stress outcomes. Portfolio-level loss attribution is a natural extension but is not reported here to maintain focus on system-level capital resilience.
 
+
+### Bank selection
+
+The framework is applied to three UK-headquartered banks selected to represent distinct business models rather than to provide an exhaustive coverage of the banking system. HSBC, Lloyds Banking Group, and Standard Chartered differ materially in portfolio composition, geographic orientation, and sources of credit risk exposure. This allows the stress test to highlight how a common macroeconomic shock transmits differently across institutions with contrasting balance-sheet structures, while keeping the analysis focused and interpretable.
+
+In particular, the selection contrasts a retail-focused lender, a globally diversified universal bank, and a wholesale- and trade-oriented bank, which is sufficient to generate meaningful cross-bank variation without introducing unnecessary complexity.
+
 ---
 
 ## Macro scenarios
