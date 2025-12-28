@@ -80,6 +80,32 @@ The framework is applied to three UK-headquartered banks selected to represent d
 
 In particular, the selection contrasts a retail-focused lender, a globally diversified universal bank, and a wholesale- and trade-oriented bank, which is sufficient to generate meaningful cross-bank variation without introducing unnecessary complexity.
 
+### Data sources
+
+Bank balance-sheet inputs are constructed using publicly available Pillar 3 disclosures, including reported CET1 capital, risk-weighted assets, and high-level portfolio breakdowns. Where granular exposures are not directly disclosed, stylised allocations are used to map reported totals into portfolio buckets in a manner consistent with each bank’s published business model. Balance-sheet figures are UK-focused and intended to be illustrative rather than supervisory-grade.
+
+Macroeconomic inputs are sourced from official UK statistical releases and central-bank databases:
+
+- UK GDP (quarterly): Office for National Statistics, series IHYQ  
+  (ONS UK Economic Accounts)
+- Unemployment rate: Office for National Statistics, Labour Market Statistics, series MGSX  
+- House prices: Office for National Statistics, UK House Price Index  
+- Policy rate and gilt yields: Bank of England Interactive Database  
+  (series IUMABEDR, IUMAMNZC)
+
+Raw macroeconomic series are downloaded, cleaned, and transformed to a consistent quarterly frequency prior to scenario construction. The most recent observed data point is used to anchor the baseline scenario.
+
+The data directory is organised as follows:
+
+```text
+data/
+|-- bank reports/   # Pillar 3 disclosures
+|-- raw/            # Raw downloaded macroeconomic data
+|-- processed/      # Cleaned and transformed CSV outputs
+```
+
+This approach mirrors common practice in exploratory stress testing and policy analysis, combining disclosed regulatory data with stylised assumptions to preserve internal consistency while avoiding the use of confidential supervisory information.
+
 ---
 
 ## Macro scenarios
