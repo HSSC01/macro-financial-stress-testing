@@ -38,13 +38,14 @@ class Bank:
     
     @property
     def total_rwa(self) -> float:
-        return sum(bucket.rwa for bucket in self.buckets.values())
+        return self.cet1 / self.cet1_ratio
     
     @property
     def cet1_ratio(self) -> float:
-        if self.total_rwa <= 0:
-            raise ValueError(f"Bank {self.name}: Total RWA must be positive to compute CET1 ratio")
-        return self.cet1 / self.total_rwa
+        try:
+            return float(cfg.REPORTED_CET1_RATIO[self.name])
+        except KeyError:
+            raise KeyError(f"No reported CET1 ratio configured for bank '{self.name}'")
     
     def __post_init__(self):
         if self.cet1 < 0.0:
@@ -102,7 +103,7 @@ def make_stylised_bank(name: str) -> Bank: # Construct stylised Bank object from
     buckets: Dict[str, PortfolioBucket] = {}
     for portfolio in cfg.BASE_PORTFOLIOS:
         ead = total_ead * float(shares[portfolio])
-        rw = float(cfg.RISK_WEIGHT[portfolio])
+        rw = float(cfg.RISK_WEIGHT[name][portfolio])
         lgd = float(cfg.BASELINE_LGD[portfolio])
         buckets[portfolio] = PortfolioBucket(name=portfolio, ead=ead, rw=rw, lgd=lgd)
 
@@ -113,9 +114,7 @@ def make_stylised_bank(name: str) -> Bank: # Construct stylised Bank object from
         "energy_intensive_share_of_corp": float(cfg.ENERGY_INTENSIVE_SHARE_OF_CORP[name])
     }
 
-    # Compute CET1 capital in £bn from target ratio and rwa
-    total_rwa = sum(b.rwa for b in buckets.values())
-    cet1 = float(cfg.TARGET_CET1_RATIO[name]) * float(total_rwa)
+    cet1 = cfg.CET1_CAPITAL_BN[name]
     return Bank(name=name, cet1=cet1, buckets=buckets, overlays=overlays)
 
 def make_stylised_banks() -> List[Bank]: # Construct stylised Bank objects for all banks in config

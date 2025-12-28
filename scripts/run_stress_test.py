@@ -191,7 +191,7 @@ def main() -> None:
     # 4) Optional: full stress test
     if args.run_stress:
         # Fit satellite models (synthetic history)
-        models = eng.fit_models_from_synthetic_history()
+        models = eng.fit_models_from_history()
 
         # Project loss rates for baseline + adverse over 12 quarters
         projected_loss_rates = eng.build_projected_loss_rates(models=models, horizon_q=12)

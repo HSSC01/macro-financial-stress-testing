@@ -30,37 +30,51 @@ BASE_PORTFOLIOS = [
 
 # Risk weights dictionary
 RISK_WEIGHT = {
-    MORTGAGES_OO: 0.25,
-    CONSUMER_UNSECURED: 0.5,
-    SME_LOANS: 0.75,
-    LARGE_CORP_LOANS: 1.0
+    "HSBC": {
+        MORTGAGES_OO: 0.23,
+        CONSUMER_UNSECURED: 0.55,
+        SME_LOANS: 0.60,
+        LARGE_CORP_LOANS: 0.45
+    },
+    "Lloyds Banking Group": {
+        MORTGAGES_OO: 0.173,
+        CONSUMER_UNSECURED: 0.457,
+        SME_LOANS: 0.667,
+        LARGE_CORP_LOANS: 0.524
+    },
+    "Standard Chartered": {
+        MORTGAGES_OO: 0.07,
+        CONSUMER_UNSECURED: 0.545,
+        SME_LOANS: 0.47,
+        LARGE_CORP_LOANS: 0.344
+    }
 }
 
 # Loss Given Default (LGD) dictionary
 BASELINE_LGD = {
-    MORTGAGES_OO: 0.2,
+    MORTGAGES_OO: 0.18,
     CONSUMER_UNSECURED: 0.8,
     SME_LOANS: 0.6,
-    LARGE_CORP_LOANS: 0.4
+    LARGE_CORP_LOANS: 0.45
 }
 
 # Portfolio shares per bank
 BANK_BASE_PORTFOLIO_SHARES = {
     "HSBC": {
-        MORTGAGES_OO: 0.20,
-        CONSUMER_UNSECURED: 0.15,
-        SME_LOANS: 0.25,
-        LARGE_CORP_LOANS: 0.40
+        MORTGAGES_OO: 0.18,
+        CONSUMER_UNSECURED: 0.14,
+        SME_LOANS: 0.26,
+        LARGE_CORP_LOANS: 0.42
     },
     "Lloyds Banking Group": {
-        MORTGAGES_OO: 0.55,
-        CONSUMER_UNSECURED: 0.25,
-        SME_LOANS: 0.15,
+        MORTGAGES_OO: 0.60,
+        CONSUMER_UNSECURED: 0.22,
+        SME_LOANS: 0.13,
         LARGE_CORP_LOANS: 0.05
     },
     "Standard Chartered": {
-        MORTGAGES_OO: 0.05,
-        CONSUMER_UNSECURED: 0.05,
+        MORTGAGES_OO: 0.04,
+        CONSUMER_UNSECURED: 0.06,
         SME_LOANS: 0.30,
         LARGE_CORP_LOANS: 0.60
     }
@@ -68,35 +82,42 @@ BANK_BASE_PORTFOLIO_SHARES = {
 
 # Overlay shares (subsets)
 HIGH_LTV_SHARE_OF_MORTGAGES = {
-    "HSBC": 0.18,
-    "Lloyds Banking Group": 0.25,
-    "Standard Chartered": 0.10
+    "HSBC": 0.20,
+    "Lloyds Banking Group": 0.28,
+    "Standard Chartered": 0.08
 }
 
 EXPORT_SHARE_OF_LARGE_CORP = {
-    "HSBC": 0.40,
-    "Lloyds Banking Group": 0.15,
-    "Standard Chartered": 0.55 
+    "HSBC": 0.45,
+    "Lloyds Banking Group": 0.18,
+    "Standard Chartered": 0.60 
 }
 
 ENERGY_INTENSIVE_SHARE_OF_CORP = {
-    "HSBC": 0.12,
-    "Lloyds Banking Group": 0.10,
-    "Standard Chartered": 0.18 
+    "HSBC": 0.14,
+    "Lloyds Banking Group": 0.09,
+    "Standard Chartered": 0.20
 }
 
 # Scale choices
 TOTAL_EAD_BN = {
-    "HSBC": 800,
-    "Lloyds Banking Group": 600,
-    "Standard Chartered": 400
+    "HSBC": 1200,
+    "Lloyds Banking Group": 650,
+    "Standard Chartered": 450
 }
 
-TARGET_CET1_RATIO = {
-    "HSBC": 0.14,
-    "Lloyds Banking Group": 0.15,
-    "Standard Chartered": 0.13
+REPORTED_CET1_RATIO = {
+    "HSBC": 0.1425,
+    "Lloyds Banking Group": 0.136,
+    "Standard Chartered": 0.142
 }
+
+CET1_CAPITAL_BN = {
+    "HSBC": 94.560,
+    "Lloyds Banking Group": 25.926,
+    "Standard Chartered": 27.075
+}
+
 
 
 # Lightweight validation
@@ -106,8 +127,10 @@ for bank in BANK_NAMES:
         raise KeyError(f"Missing {bank} in BANK_BASE_PORTFOLIO_SHARES")
     if bank not in TOTAL_EAD_BN:
         raise KeyError(f"Missing {bank} in TOTAL_EAD_BN")
-    if bank not in TARGET_CET1_RATIO:
-        raise KeyError(f"Missing {bank} in TARGET_CET1_RATIO")
+    if bank not in REPORTED_CET1_RATIO:
+        raise KeyError(f"Missing {bank} in REPORTED_CET1_RATIO")
+    if bank not in CET1_CAPITAL_BN:
+        raise KeyError(f"Missing {bank} in CET1_CAPITAL_BN")
     if bank not in HIGH_LTV_SHARE_OF_MORTGAGES:
         raise KeyError(f"Missing {bank} in HIGH_LTV_SHARE_OF_MORTGAGES")
     if bank not in EXPORT_SHARE_OF_LARGE_CORP:
@@ -131,18 +154,19 @@ for bank in BANK_NAMES:
 
 # Sanity checks for parameter bounds
 for p in BASE_PORTFOLIOS:
-    lgd = BASELINE_LGD[p]
-    rw = RISK_WEIGHT[p]
-    if not (0.0 <= lgd <= 1.0):
-        raise ValueError(f"BASELINE_LGD for portfolio {p} must be in [0,1], got {lgd}")
-    if rw < 0.0:
-        raise ValueError(f"RISK_WEIGHT for portfolio {p} must be non-negative, got {rw}")
+    for b in RISK_WEIGHT:
+        lgd = BASELINE_LGD[p]
+        rw = RISK_WEIGHT[b][p]
+        if not (0.0 <= lgd <= 1.0):
+            raise ValueError(f"BASELINE_LGD for portfolio {p} must be in [0,1], got {lgd}")
+        if rw < 0.0:
+            raise ValueError(f"RISK_WEIGHT for portfolio {p} must be non-negative, got {rw}")
 
 for bank in BANK_NAMES:
-    cet1 = TARGET_CET1_RATIO[bank]
+    cet1 = REPORTED_CET1_RATIO[bank]
     ead = TOTAL_EAD_BN[bank]
     if not (0.0 < cet1 < 1.0):
-        raise ValueError(f"TARGET_CET1_RATIO for {bank} must be in (0,1), got {cet1}")
+        raise ValueError(f"REPORTED_CET1_RATIO for {bank} must be in (0,1), got {cet1}")
     if ead <= 0.0:
         raise ValueError(f"TOTAL_EAD_BN for {bank} must be > 0, got {ead}")
 

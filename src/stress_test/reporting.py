@@ -277,7 +277,7 @@ def write_results_tables(
 
     if write_results:
         if system_results is None or trough_summary is None or cet1_ratio_paths is None or loss_paths is None or losses_by_bucket is None:
-            raise ValueError("system_results, trough_summary, cet1_ratio_paths and loss_paths are required when write_results=True")
+            raise ValueError("system_results, trough_summary, cet1_ratio_paths, loss_paths and losses_by_bucket are required when write_results=True")
         written.append(write_system_results_csv(system_results, out_dir))
         written.append(write_trough_summary_csv(trough_summary, out_dir))
         written.append(write_cet1_ratio_paths_csv(cet1_ratio_paths, out_dir))

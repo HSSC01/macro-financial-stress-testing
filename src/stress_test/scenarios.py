@@ -19,12 +19,11 @@ def quarter_index(start: str, horizon_q: int) -> pd.PeriodIndex:
 def make_baseline(macro_hist: pd.DataFrame | None = None, horizon_q: int = 12) -> pd.DataFrame:
     if macro_hist is None:
         macro_hist = data.macro_hist()
-    start = macro_hist["quarter"].iloc[-1] + 1
+    start = macro_hist.index[-1] + 1
     index = quarter_index(start, horizon_q)
     last_row = macro_hist.iloc[-1].to_frame().T
     df = pd.concat([last_row] * horizon_q, ignore_index=True)
     df.index = index
-    df = df.drop(columns="quarter")
 
     validate_scenario(df)
     return df
@@ -50,17 +49,20 @@ def make_adverse(baseline_df: pd.DataFrame, severity: float=1.0, persistence: fl
         raise ValueError("baseline_df must be a non-empty DataFrame.")
     horizon_q = len(baseline_df.index)
     impact = {
-        cfg.GDP_GROWTH: -0.020 * severity,
-        cfg.UNEMPLOYMENT_RATE: 0.010 * severity,
-        cfg.HOUSE_PRICE_GROWTH: -0.030 * severity,
-        cfg.POLICY_RATE: -0.005 * severity,
-        cfg.GILT_10Y: -0.003 * severity
+        cfg.GDP_GROWTH: -0.012 * severity,
+        cfg.UNEMPLOYMENT_RATE: 0.004 * severity,
+        cfg.HOUSE_PRICE_GROWTH: -0.015 * severity,
+        cfg.POLICY_RATE: -0.0025 * severity,
+        cfg.GILT_10Y: -0.0015 * severity
     }
     adverse = baseline_df.copy()
     for col, s0 in impact.items():
         if col not in adverse.columns:
             raise ValueError(f"Baseline is missing required column: {col}")
         shock_path = apply_persistent_shock(horizon_q, s0, persistence)
+        if col == cfg.UNEMPLOYMENT_RATE: 
+            shock_path = np.roll(shock_path, 1)
+            shock_path[0] = 0.0
         adverse[col] = adverse[col].to_numpy(dtype=float) + shock_path
 
     # Safety

@@ -1,8 +1,9 @@
 import pandas as pd
 import stress_test.balance_sheet as bs
 from stress_test.satellite import project_loss_rates, fit_bucket_models
-from stress_test.synthetic_data import make_synthetic_history
+# from stress_test.synthetic_data import make_synthetic_history
 from stress_test.scenarios import make_baseline, make_adverse
+import stress_test.data.data as data
 
 
 def project_loss_rates_all_buckets(models: dict, scenario_df: pd.DataFrame) -> pd.DataFrame:
@@ -90,8 +91,9 @@ def run_system(banks: list[bs.Bank], projected_loss_rates: dict[str, pd.DataFram
 
 # Convenience: full pipeline up to projected loss rates
 
-def fit_models_from_synthetic_history(periods: int = 80, seed: int = 184):
-    macro_hist, loss_hist = make_synthetic_history(periods=periods, seed=seed)
+def fit_models_from_history(seed: int = 184):
+    macro_hist = data.macro_hist()
+    loss_hist = data.synthetic_loss_rates().reindex(macro_hist.index)
     return fit_bucket_models(macro_hist, loss_hist)
 
 def build_projected_loss_rates(models: dict, horizon_q: int = 12, severity: float = 1.0) -> dict[str, pd.DataFrame]:

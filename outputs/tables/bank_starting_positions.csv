@@ -1,4 +1,4 @@
 bank,total_ead_bn,total_rwa_bn,cet1_bn,cet1_ratio,overlay__high_ltv_share_of_mortgages,overlay__export_share_of_large_corp,overlay__energy_intensive_share_of_corp
-HSBC,800.0,570.0,79.80000000000001,0.14,0.18,0.4,0.12
-Lloyds Banking Group,600.0,255.0,38.25,0.15,0.25,0.15,0.1
-Standard Chartered,400.0,345.0,44.85,0.13,0.1,0.55,0.18
+HSBC,1200.0,663.5789473684212,94.56,0.1425,0.2,0.45,0.14
+Lloyds Banking Group,650.0,190.63235294117644,25.926,0.136,0.28,0.18,0.09
+Standard Chartered,450.0,190.66901408450704,27.075,0.142,0.08,0.6,0.2
