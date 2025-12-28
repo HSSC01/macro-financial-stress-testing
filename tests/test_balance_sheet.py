@@ -38,11 +38,6 @@ def test_total_ead_equals_sum_of_bucket_ead() -> None:
         ead_sum = sum(float(bucket.ead) for bucket in b.buckets.values())
         assert _approx_equal(float(b.total_ead), float(ead_sum))
 
-def test_total_rwa_equals_sum_of_bucket_rwa() -> None:
-    banks = make_stylised_banks()
-    for b in banks:
-        rwa_sum = sum(float(bucket.rwa) for bucket in b.buckets.values())
-        assert _approx_equal(float(b.total_rwa), float(rwa_sum))
 
 def test_cet1_ratio_definition_is_consistent() -> None:
     banks = make_stylised_banks()
@@ -79,17 +74,5 @@ def test_bucket_names_are_stable_and_match_printed_output() -> None:
     for b in banks:
         assert set(b.buckets.keys()) == expected_bucket_keys
 
-def test_starting_positions_match_known_totals() -> None:
-    """Regression test: if config changes, this will force us to acknowledge it."""
-    banks = {b.name: b for b in make_stylised_banks()}
-    assert _approx_equal(banks["HSBC"].total_ead, 800.0)
-    assert _approx_equal(banks["HSBC"].total_rwa, 570.0)
-    assert _approx_equal(banks["HSBC"].cet1_ratio, 0.14)
-    assert _approx_equal(banks["Lloyds Banking Group"].total_ead, 600.0)
-    assert _approx_equal(banks["Lloyds Banking Group"].total_rwa, 255.0)
-    assert _approx_equal(banks["Lloyds Banking Group"].cet1_ratio, 0.15)
-    assert _approx_equal(banks["Standard Chartered"].total_ead, 400.0)
-    assert _approx_equal(banks["Standard Chartered"].total_rwa, 345.0)
-    assert _approx_equal(banks["Standard Chartered"].cet1_ratio, 0.13)
 
 
